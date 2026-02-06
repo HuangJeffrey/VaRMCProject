@@ -1,0 +1,83 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=0.75in]{geometry}
+\usepackage[dvipsnames]{xcolor} % adding colour
+\usepackage{amsmath} % adding math equations
+\usepackage{natbib} % adding BibTeX support
+\usepackage{hyperref}
+
+
+
+\begin{document}
+	\begin{center}
+    
+    	% MAKE SURE YOU TAKE OUT THE SQUARE BRACKETS
+    
+		\LARGE{\textbf{STA380 Project Proposal}} \\
+        \vspace{1em}
+        \Large{Simulating the Bivariate Gaussian Distribution Using MCMC Methods} \\
+        \vspace{1em}
+        \normalsize\textbf{Anna Ly} \\
+        \normalsize{annahuynh.ly@utoronto.ca} \\
+        \vspace{1em}
+        \normalsize{University of Toronto, Mississauga}
+     
+	\end{center}
+    \begin{normalsize}
+        The following proposal is an example of using an ``original" topic that has not already been suggested in the main project document. I plan to teach the material in this example in the last few weeks of the term. Of course, since I am providing this example (with all raw codes), you are not permitted to use MCMC methods for your project unless you want to do something more advanced and outside the scope of the course. {\color{WildStrawberry} Coloured text represents additional comments.}
+        I used an Undergraduate Project Capstone Proposal Template to write this example \citep{white_capstone_template}.
+    
+    	\section{Project Topic}
+        Simulating the Bivariate Gaussian Distribution Using MCMC Methods. \\
+        {\color{WildStrawberry} This does not necessarily have to be the same name as your title; I was lazy.}
+
+        \section{Simulation vs. Dataset}
+        The results will be from using pure simulations.
+        
+        \section{Project Details}
+        We will be using 3 introductory MCMC methods to simulate the bivariate Gaussian distribution:
+        \begin{itemize}
+            \item An independence Metropolis–Hastings algorithm
+            \item A random walk Metropolis–Hastings algorithm
+            \item A Gibbs Sampler
+        \end{itemize}
+        The following outputs will be provided:
+        \begin{itemize}
+            \item Scatter plot of the samples generated
+            \item Histogram and Q-Q plots to assess marginal normality
+            \item The generated mean and the covariance matrix
+        \end{itemize}
+
+        \noindent {\color{WildStrawberry}Aside: if extra details mostly pertain to the next section, then you can just write them below instead of repeating yourself.}
+        
+        \section{User Inputs (Shiny Components)}
+        Users will be able to modify the following:
+        \begin{enumerate}
+            \item Setting the seed
+            \item Change the parameters, specifically, for $i \in \{1, 2\}, \mu_{i}, \sigma_{i}$ and correlation $\rho$.
+            \item Select the information presented: 
+                \begin{itemize}
+                    \item the mean and covariance matrix,
+                    \item histogram and Q-Q plot for marginal normality,
+                    \item and the scatterplot of the samples generated.
+                \end{itemize}
+            \item Be able to choose what information is presented, i.e., they can look at results from just 1 MCMC method, 2 MCMC methods, or all three at once.
+            \item For the plots, be able to modify the colours.
+        \end{enumerate}
+
+\end{normalsize}
+
+\nocite{*}
+\bibliographystyle{abbrvnat}
+\bibliography{bibliography}
+\vspace{0.8cm}
+
+\noindent {\color{WildStrawberry} I purposely omitted other citations, because naturally, you could just copy and paste some of them. I expect all groups to also reference the following:
+\begin{itemize}
+    \item R Shiny (use the command \texttt{citation("shiny")} in \texttt{R} once you've installed the package).
+    \item The course textbook, or other sources you have used to learn computational statistics methods.
+\end{itemize}
+There is no strict requirement when it comes to the citation style. I only request that you use BibTeX citations.
+}
+
+\end{document}
