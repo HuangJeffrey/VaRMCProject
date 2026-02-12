@@ -1,83 +1,90 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=0.75in]{geometry}
-\usepackage[dvipsnames]{xcolor} % adding colour
-\usepackage{amsmath} % adding math equations
-\usepackage{natbib} % adding BibTeX support
+\usepackage{amsmath}
+\usepackage{natbib}
 \usepackage{hyperref}
-
-
 
 \begin{document}
 	\begin{center}
-    
-    	% MAKE SURE YOU TAKE OUT THE SQUARE BRACKETS
-    
 		\LARGE{\textbf{STA380 Project Proposal}} \\
         \vspace{1em}
-        \Large{Simulating the Bivariate Gaussian Distribution Using MCMC Methods} \\
+        \Large{VaR calculator for Stock Portfolio through Monte Carlo and Geometric Brownian Motion} \\
         \vspace{1em}
-        \normalsize\textbf{Anna Ly} \\
-        \normalsize{annahuynh.ly@utoronto.ca} \\
+        \normalsize\textbf{Jeffrey Huang, Sun Jiawei, Mahan Hooshmandkhayat} \\
+        \normalsize{jjeffrey.huang@mail.utoronto.ca}\\
+        \normalsize{faye.sun@mail.utoronto.ca}\\
+        \normalsize{mahan.hooshmandkhayat@mail.utoronto.ca}\\
         \vspace{1em}
-        \normalsize{University of Toronto, Mississauga}
+        \normalsize{University of Toronto}
      
 	\end{center}
     \begin{normalsize}
-        The following proposal is an example of using an ``original" topic that has not already been suggested in the main project document. I plan to teach the material in this example in the last few weeks of the term. Of course, since I am providing this example (with all raw codes), you are not permitted to use MCMC methods for your project unless you want to do something more advanced and outside the scope of the course. {\color{WildStrawberry} Coloured text represents additional comments.}
-        I used an Undergraduate Project Capstone Proposal Template to write this example \citep{white_capstone_template}.
-    
-    	\section{Project Topic}
-        Simulating the Bivariate Gaussian Distribution Using MCMC Methods. \\
-        {\color{WildStrawberry} This does not necessarily have to be the same name as your title; I was lazy.}
+        \section{Project Topic}
+        Using Monte Carlo and Geometric Brownian Motion to estimate the most realistic value of the risk of a chosen stock portfolio.
+        
+        \section{Introduction}
+        By having a stock portfolio consisting of multiple different stocks from a variety of different sectors, a Value-at-Risk value is used to help us quantify the amount of risk of the entire portfolio. We aim to combine the simulation technique, Monte Carlo, and Geometric Brownian Motion to help us simulate and process our data at a given confidence level into a single quantity that represents the maximum expected loss over time.\\
+        
+        In this project, the user is provided with a capital of \$1,000,000 and they will be using it to invest in the stock indexes provided in order to create a portfolio of their own. Through their selections, our program will display a final value of the approximate risk that the user's portfolio will have as well as the profits/losses they gain. 
 
         \section{Simulation vs. Dataset}
-        The results will be from using pure simulations.
+        The data will be gathered from using the \textbf{yfR} package that allows us to work with stock data from Yahoo Finance.
         
         \section{Project Details}
-        We will be using 3 introductory MCMC methods to simulate the bivariate Gaussian distribution:
+        Separating the details into 4 major sections
         \begin{itemize}
-            \item An independence Metropolis–Hastings algorithm
-            \item A random walk Metropolis–Hastings algorithm
-            \item A Gibbs Sampler
-        \end{itemize}
-        The following outputs will be provided:
-        \begin{itemize}
-            \item Scatter plot of the samples generated
-            \item Histogram and Q-Q plots to assess marginal normality
-            \item The generated mean and the covariance matrix
-        \end{itemize}
+        
+            \item \textbf{Regime-switching Volatility Predictor:}\\
+            The volatility of each specific stock will be found by fitting a Hidden Markov Model to identify its current regime (High, Medium, Low), and then selecting the volatility with respect to its current regime. These regime-specific volatilities, along with the correlation matrix estimated from historical returns, are used to construct the covariance matrix: $$\Sigma_{ij} = \rho_{ij} \cdot \sigma_i \cdot \sigma_j$$
+            where $\rho_{ij}$ is the correlation between stocks $i$ and $j$, and $\sigma_i$, $\sigma_j$ are their regime-specific volatilities. We then apply Cholesky factorization to decompose this covariance matrix into a lower triangular matrix $L$ such that: $$\Sigma = LL^T$$ This allows us to transform a vector of independent standard normal random variables $Z$ into correlated random shocks $\tilde{Z}$:
+            $$\tilde{Z} = LZ$$ These correlated shocks are then used in the Geometric Brownian Motion simulation to generate realistic portfolio returns.
+            
+            \item \textbf{Geometric Brownian Motion:} \\
+            We will be modeling with a lognormal GBM, $$r_i = \left(\mu_i - \frac{1}{2}\sigma_i^2\right)T + \sigma_i \sqrt{T} \cdot \tilde{Z}_i$$ where $\tilde{Z} \sim N(0, \Sigma)$ is drawn from a multivariate normal distribution with covariance matrix $\Sigma$. $\mu_i$ is the drift or expected return, $\sigma_i$ is the regime-specific volatility from our HMM, $T$ is the time horizon, and $\tilde{Z}_i$ is the correlated random shock obtained from Cholesky decomposition.
+            
+            \item \textbf{Monte Carlo:} \\
+            We aim to run around 10,000 simulations. Each simulation will include the volatility value from our predictor being substituted into our GBM equation. In each simulation, we will receive different values as each change in the ``shock" will affect the final value of our simulation. These values will then be used to calculate the portfolio's Profit/Loss with the portfolio weights. After all simulations are done, we can choose, say, a 95\% confidence interval to represent maximum expected loss, and the remaining 5\% would be the VaR value. 
 
-        \noindent {\color{WildStrawberry}Aside: if extra details mostly pertain to the next section, then you can just write them below instead of repeating yourself.}
+            \item \textbf{Back testing:} \\
+            We will be using Kupiec's test to test 250 days(standard full trading year) in order to test the validity of our VaR. The Kupiec test is used to test the proportion of failures to see how much of it is in accordance with our confidence interval. The main formula used is the Likelihood Ratio test: $$LR_{POF} = -2 \ln \left[ \frac{(1-p)^{T-x} \cdot p^x}{\left(1-\frac{x}{T}\right)^{T-x} \cdot \left(\frac{x}{T}\right)^x} \right]$$
+            where $p$ = expected failure rate (e.g., 0.05 for 95\% VaR), $T$ = number of observations in backtest period, $x$ = number of observed violations
+
+        \end{itemize}
         
         \section{User Inputs (Shiny Components)}
-        Users will be able to modify the following:
-        \begin{enumerate}
-            \item Setting the seed
-            \item Change the parameters, specifically, for $i \in \{1, 2\}, \mu_{i}, \sigma_{i}$ and correlation $\rho$.
-            \item Select the information presented: 
-                \begin{itemize}
-                    \item the mean and covariance matrix,
-                    \item histogram and Q-Q plot for marginal normality,
-                    \item and the scatterplot of the samples generated.
-                \end{itemize}
-            \item Be able to choose what information is presented, i.e., they can look at results from just 1 MCMC method, 2 MCMC methods, or all three at once.
-            \item For the plots, be able to modify the colours.
-        \end{enumerate}
+        \begin{itemize}
+            \item Create a custom stock index portfolio with a certain number of indexes available.
+            \begin{itemize}
+                \item Tech: Apple, NVIDIA, Tesla
+                \item Financial: Berkshire Hathaway, Visa, JP Morgan Chase
+                \item Defenses: Lockheed Martin, Northrop Grumman
+                \item Consumer Staples: Walmart, Costco
+            \end{itemize}
+            \item Change the maximum expected loss.
+            \begin{itemize}
+                \item A movable scale that spans a minimum of 90\% to 99\%.
+            \end{itemize}
+            \item Change the number of simulations for Monte Carlo.
+            \begin{itemize}
+                \item A movable scale that allows user to select number of simulations in terms of 1,000 with a minimum of 5,000 and a maximum of 10,000.
+            \end{itemize}
+            \item Graph display of all the Monte Carlo simulations.
+            \item A chart that displays the volatility of stocks, the regime of the stocks, and the volatility of the portfolio.
+            \item Display the correlation charts of the portfolio.
+            \item Choosing VaR time horizons(\textit{T}) 
+            \begin{itemize}
+                \item A movable scale that spans a minimum of 1 day to a maximum of 30 days.
+            \end{itemize}
+        \end{itemize}
+        The usage of AI was specifically targeted into learning and gaining a deeper understanding for Cholesky factorization, and the updated symbols from the GBM formula. 
 
 \end{normalsize}
-
+\newpage
 \nocite{*}
 \bibliographystyle{abbrvnat}
 \bibliography{bibliography}
 \vspace{0.8cm}
 
-\noindent {\color{WildStrawberry} I purposely omitted other citations, because naturally, you could just copy and paste some of them. I expect all groups to also reference the following:
-\begin{itemize}
-    \item R Shiny (use the command \texttt{citation("shiny")} in \texttt{R} once you've installed the package).
-    \item The course textbook, or other sources you have used to learn computational statistics methods.
-\end{itemize}
-There is no strict requirement when it comes to the citation style. I only request that you use BibTeX citations.
-}
 
 \end{document}
