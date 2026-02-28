@@ -1,0 +1,71 @@
+try to not have other people commit on behalf of one person. It looks like to me only one user is committing, even though credit is distributed amongst members; however, towards the end, I will be looking at individual commits.
+
+knowing how to properly use GitHub is a skill you should acquire, and having other people use it for you isn't particularly appealing.
+
+regarding varmc.R:
+
+you don't need to do 
+stats::quantile
+stats is already included in base R, so you don't need to summon it.
+
+the correlation_matrix & covariance_matrix function name is a bit inaccurate;
+I was thinking you were trying to create a general correlation matrix, but it's specifically just for a portfolio data set. I would suggest changing the actual function names to be more accurate so someone doesn't mistake it for an existing function from other packages.
+
+(for example, I recently had to help construct a covariance matrix function in a package I am an author for... and I can confirm that the use case is entirely different.)
+
+I wouldn't use \dontrun{}.
+
+You actually want people to be able to use the example() function. This is useful.
+
+For example, if you let's say wanted to learn how to use a package that I'm an author of, you could do:
+library(lme4)
+example(lmer) # lmer stands for linear mixed model, similar to lm()
+
+and code will run a simple linear mixed model to see syntax use, output, etc.
+
+regarding the vignette:
+In general when you are listing the functions available, you should probably actually say the function name rather than the "clean" version of the function.
+
+I'm not too sure if you've taken STA304/STA305 with me where I criticized people's use of using "variable names" for plots; there is a practical difference: when writing tutorials for code, you should be precise. When presenting information to people, the focus is to have more of a layman explanation for anyone not part of the project. Vignettes are moreso a tutorial of your information.
+
+I personally wouldn't use "echo = FALSE" if you are using code that is part of your package (this is something you have set various times). This is because it's useful to understand how to use your functions.
+
+I understand for this that it is undesirable:
+
+out <- suppressMessages(
+  suppressWarnings(
+    stock_detection(apple)
+  )
+)
+
+cat(out$current_volatility)
+cat(out$current_mean)
+
+You may instead then want to have another line that you actually show, to make it more clear. Like:
+
+```{r, eval = FALSE}
+stock_detection(apple)
+
+cat(out$current_volatility)
+cat(out$current_mean)
+```
+
+To show the "nice" version.
+
+For the line where you apply the correlated shocks, I would generally include (aka present) most of the steps on how you cleaned the data, but it's fine for ggplot2 code to be suppressed (since ggplot2 functions is not part of your package).
+
+Looking at the vignette and the data, I think it is worth giving some lines regarding the proper interpretation. It should be generally clear what the goal of the package should be, and in for your particular use case, what the key takeaways were (especially since I'm not necessarily that knowledgeable regarding your topic, and it can be a bit niche.)
+
+For example, the plot of the cumulative GBM simulated returns appears to be too widespread, that it appears to be awful to make predictions for the stock market. That generally could have been the outcome (i.e., not good enough to make predictions/generalizations), but it should be explicit.
+
+What would an ideal result look like?
+
+In the attached .html file it doesn't showcase any references, although I do not particularly understand why based on the format of the file. I re-rendered it on my end and the bibtex files do render properly.
+
+2/2
+
+
+
+
+
+
