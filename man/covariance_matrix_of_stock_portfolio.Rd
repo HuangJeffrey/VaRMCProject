@@ -21,5 +21,4 @@ Constructs \eqn{\Sigma} using \eqn{\Sigma_{ij} = \rho_{ij}\sigma_i\sigma_j}.
 vol <- c(0.02, 0.015)
 corr <- matrix(c(1, 0.4, 0.4, 1), nrow = 2)
 covariance_matrix_of_stock_portfolio(vol, corr)
-
 }

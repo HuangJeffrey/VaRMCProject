@@ -21,10 +21,12 @@
 #' out$current_volatility
 #' out$current_mean
 #' head(out$returns_data)
-#' @importFrom tidyquant tq_transmute periodReturn
+#' @importFrom tidyquant tq_transmute
+#' @importFrom quantmod periodReturn
 #' @importFrom dplyr mutate group_by summarize arrange row_number
 #' @importFrom depmixS4 depmix fit posterior
-#' @importFrom stats gaussian sd setNames
+#' @importFrom stats gaussian sd setNames cor
+#' @importFrom magrittr %>%
 #' @importFrom utils tail
 #' @export
 stock_detection <- function(stock){
@@ -33,12 +35,12 @@ stock_detection <- function(stock){
                  mutate_fun = periodReturn,
                  type = "log",
                  period = "daily",
-                 col_rename = "return"
+                 col_rename = "returns_per_stock"
     )
   
   set.seed(123)
   
-  hmm_model <- depmix(return~1,
+  hmm_model <- depmix(returns_per_stock~1,
                       data = stock_data,
                       nstates = 3,
                       family = gaussian()
@@ -51,7 +53,7 @@ stock_detection <- function(stock){
   regime_volatilities <- stock_data %>%
     mutate(state = raw_states) %>%
     group_by(state) %>%
-    summarize(volatility = sd(return), mean_return = mean(return)) %>%
+    summarize(volatility = sd(returns_per_stock), mean_return = mean(returns_per_stock)) %>%
     arrange(volatility) %>%
     mutate(ordered_regime = row_number())
   
@@ -63,8 +65,7 @@ stock_detection <- function(stock){
   return(list(
     current_volatility = regime_volatilities$volatility[current_regime],
     current_mean = regime_volatilities$mean_return[current_regime],
-    returns_data = stock_data
-  ))
+    returns_data = stock_data))
 }
 
 ######################
@@ -72,22 +73,22 @@ stock_detection <- function(stock){
 #' Correlation matrix for a portfolio of regime outputs
 #'
 #' @description
-#' Merges return series by date across a list of regime_detection outputs and
+#' Merges return series by date across a list of stock_detection outputs and
 #' computes a correlation matrix of returns.
-#'
-#' @param portfolio A list where each element is the output of \code{regime_detection()}.
+#' @param portfolio A list where each element is the output of \code{stock_detection()}.
 #' @return A correlation matrix of returns (one column per asset).
 #' @examples
-#' out1 <- regime_detection(tq_get("AAPL"))
-#' out2 <- regime_detection(tq_get("MSFT"))
-#' corr <- correlation_matrix(list(out1, out2))
-#' corr
+#' dates <- seq(as.Date("2023-01-01"), by = "day", length.out = 100)
+#' out1 <- list(returns_data = data.frame(date = dates, returns_per_stock = rnorm(100, 0, 0.01)))
+#' out2 <- list(returns_data = data.frame(date = dates, returns_per_stock = rnorm(100, 0, 0.015)))
+#' portfolio <- list(out1, out2)
+#' correlation_matrix_of_stock_portfolio(portfolio)
 #' @export
 correlation_matrix_of_stock_portfolio <- function(portfolio){
-  total_returns <- portfolio[[1]]$returns_data[, c("date", "return")]
+  total_returns <- portfolio[[1]]$returns_data[, c("date", "returns_per_stock")]
   
   for (i in 2:length(portfolio)) {
-    temp <- portfolio[[i]]$returns_data[, c("date", "return")]
+    temp <- portfolio[[i]]$returns_data[, c("date", "returns_per_stock")]
     total_returns <- merge(total_returns, temp, by = "date")
   }
   
@@ -111,7 +112,6 @@ correlation_matrix_of_stock_portfolio <- function(portfolio){
 #' vol <- c(0.02, 0.015)
 #' corr <- matrix(c(1, 0.4, 0.4, 1), nrow = 2)
 #' covariance_matrix_of_stock_portfolio(vol, corr)
-#'
 #' @export
 covariance_matrix_of_stock_portfolio <- function(regime_volatilities, corr_mat) {
   n <- length(regime_volatilities)
@@ -227,7 +227,7 @@ sim_gbm <- function(expected_returns, regime_volatilities, time_horizon, shocks)
 
 #' Convert log-returns to simple returns
 #'
-#' @param sim_returns Matrix (or vector) of log-returns.
+#' @param sim_log Matrix (or vector) of log-returns.
 #' @return Matrix (or vector) of simple log \code{exp(r) - 1}.
 #'
 #' @export
@@ -241,12 +241,10 @@ log_to_simple_returns <- function(sim_log) {
 #'
 #' @description
 #' Takes simulated simple returns and converts them into portfolio P&L given weights and capital.
-#'
-#' @param sim_simple_returns Matrix of simple returns (num_sims x n assets) OR compatible with \code{%*% weights}.
+#' @param sim_simple_returns Matrix of simple returns (num_sims x n assets).
 #' @param weights Numeric vector of portfolio weights (length n assets).
 #' @param capital Initial capital (default 1e6).
 #' @return Numeric vector of P&L (length = num_sims).
-#'
 #' @export
 portfolio_pnl_from_returns <- function(sim_simple_returns, weights, capital = 1e6) {
   w <- as.numeric(weights)
@@ -365,8 +363,8 @@ backtesting <- function(returns_matrix, weights, conf, window,
     cov_mat <- covariance_matrix_of_stock_portfolio(regime_vols, corr_mat)
     L <- cholesky(cov_mat)
     shocks <- shock_gen(L, num_sims)
-    sim_return <- sim_gbm(regime_means, regime_vols, time_horizon, shocks)
-    simple_ret <- log_to_simple_returns(sim_return)
+    sim_log <- sim_gbm(regime_means, regime_vols, time_horizon, shocks)
+    simple_ret <- log_to_simple_returns(sim_log)
     pnl <- portfolio_pnl_from_returns(t(simple_ret), weights, capital)
     var_est <- compute_var(pnl, conf)
 
@@ -411,3 +409,4 @@ backtesting <- function(returns_matrix, weights, conf, window,
     reject            = LR > critical_value
   ))
 }
+utils::globalVariables(c("adjusted", "state", "volatility","returns_per_stock"))

@@ -7,18 +7,19 @@
 correlation_matrix_of_stock_portfolio(portfolio)
 }
 \arguments{
-\item{portfolio}{A list where each element is the output of \code{regime_detection()}.}
+\item{portfolio}{A list where each element is the output of \code{stock_detection()}.}
 }
 \value{
 A correlation matrix of returns (one column per asset).
 }
 \description{
-Merges return series by date across a list of regime_detection outputs and
+Merges return series by date across a list of stock_detection outputs and
 computes a correlation matrix of returns.
 }
 \examples{
-out1 <- regime_detection(tq_get("AAPL"))
-out2 <- regime_detection(tq_get("MSFT"))
-corr <- correlation_matrix(list(out1, out2))
-corr
+dates <- seq(as.Date("2023-01-01"), by = "day", length.out = 100)
+out1 <- list(returns_data = data.frame(date = dates, returns_per_stock = rnorm(100, 0, 0.01)))
+out2 <- list(returns_data = data.frame(date = dates, returns_per_stock = rnorm(100, 0, 0.015)))
+portfolio <- list(out1, out2)
+correlation_matrix_of_stock_portfolio(portfolio)
 }

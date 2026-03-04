@@ -7,7 +7,7 @@
 log_to_simple_returns(sim_log)
 }
 \arguments{
-\item{sim_returns}{Matrix (or vector) of log-returns.}
+\item{sim_log}{Matrix (or vector) of log-returns.}
 }
 \value{
 Matrix (or vector) of simple log \code{exp(r) - 1}.

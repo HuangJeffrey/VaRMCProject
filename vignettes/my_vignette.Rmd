@@ -1,13 +1,16 @@
 ---
-title: "VarMC Package"
-output: 
-  html_document:
+title: "VaRMC Package"
+output:
+  rmarkdown::html_vignette:
     toc: true
-    self_contained: true
-    pandoc_args: ["--citeproc"]
+vignette: >
+  %\VignetteIndexEntry{VaRMC Package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 bibliography: references.bib
 nocite: "@*"
 ---
+
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -181,9 +184,9 @@ The bootstraps also shows us the C.I. of 95% under 500 boostrapping resamples.
 # Backteting
 Here we do our backtesting through Kupiec's test through the same parameters used in previous examples.
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-total_returns <- portfolio[[1]]$returns_data[, c("date", "return")]
+total_returns <- portfolio[[1]]$returns_data[, c("date", "returns_per_stock")]
 for (i in 2:length(portfolio)) {
-  temp <- portfolio[[i]]$returns_data[, c("date", "return")]
+  temp <- portfolio[[i]]$returns_data[, c("date", "returns_per_stock")]
   total_returns <- merge(total_returns, temp, by = "date")
 }
 total_returns$date <- NULL

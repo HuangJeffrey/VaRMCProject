@@ -7,6 +7,8 @@
 portfolio_pnl_from_returns(sim_simple_returns, weights, capital = 1e+06)
 }
 \arguments{
+\item{sim_simple_returns}{Matrix of simple returns (num_sims x n assets).}
+
 \item{weights}{Numeric vector of portfolio weights (length n assets).}
 
 \item{capital}{Initial capital (default 1e6).}

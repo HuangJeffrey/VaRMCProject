@@ -1,9 +1,11 @@
 Package: VaRMC
-Title: What the Package Does (One Line, Title Case)
+Title: Monte Carlo Value at Risk Estimation
 Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Authors@R: c(
+    person("Jeffrey", "Huang", email = "jeffrey.huang@example.com", role = c("aut", "cre")),
+    person("Sun", "Jia Wei", role = "aut")
+    )
+Description: Applying MC and GBM to simulate VaR for given stock index portfolio.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -12,11 +14,13 @@ Imports:
     depmixS4,
     dplyr,
     magrittr,
-    tidyquant
+    tidyquant,
+    quantmod
 Suggests:
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),
-    tidyverse
+    tidyverse,
+    ggplot2
 VignetteBuilder: knitr
 Config/testthat/edition: 3

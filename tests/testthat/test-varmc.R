@@ -351,9 +351,9 @@ test_that("var_bootstrap_ci VaR point estimate falls within CI", {
 
 test_that("correlation_matrix_of_stock_portfolio returns correct dimensions", {
   dates <- seq(as.Date("2020-01-01"), by = "day", length.out = 100)
-  p1 <- list(returns_data = data.frame(date = dates, return = rnorm(100, 0, 0.01)))
-  p2 <- list(returns_data = data.frame(date = dates, return = rnorm(100, 0, 0.02)))
-  p3 <- list(returns_data = data.frame(date = dates, return = rnorm(100, 0, 0.015)))
+  p1 <- list(returns_data = data.frame(date = dates, returns_per_stock = rnorm(100, 0, 0.01)))
+  p2 <- list(returns_data = data.frame(date = dates, returns_per_stock = rnorm(100, 0, 0.02)))
+  p3 <- list(returns_data = data.frame(date = dates, returns_per_stock = rnorm(100, 0, 0.015)))
   portfolio <- list(p1, p2, p3)
   corr <- correlation_matrix_of_stock_portfolio(portfolio)
   expect_equal(nrow(corr), 3)
@@ -362,8 +362,8 @@ test_that("correlation_matrix_of_stock_portfolio returns correct dimensions", {
 
 test_that("correlation_matrix_of_stock_portfolio diagonal is all ones", {
   dates <- seq(as.Date("2020-01-01"), by = "day", length.out = 100)
-  p1 <- list(returns_data = data.frame(date = dates, return = rnorm(100)))
-  p2 <- list(returns_data = data.frame(date = dates, return = rnorm(100)))
+  p1 <- list(returns_data = data.frame(date = dates, returns_per_stock = rnorm(100)))
+  p2 <- list(returns_data = data.frame(date = dates, returns_per_stock = rnorm(100)))
   portfolio <- list(p1, p2)
   corr <- correlation_matrix_of_stock_portfolio(portfolio)
   expect_equal(unname(diag(corr)), c(1, 1), tolerance = 1e-12)
@@ -371,8 +371,8 @@ test_that("correlation_matrix_of_stock_portfolio diagonal is all ones", {
 
 test_that("correlation_matrix_of_stock_portfolio is symmetric", {
   dates <- seq(as.Date("2020-01-01"), by = "day", length.out = 200)
-  p1 <- list(returns_data = data.frame(date = dates, return = rnorm(200)))
-  p2 <- list(returns_data = data.frame(date = dates, return = rnorm(200)))
+  p1 <- list(returns_data = data.frame(date = dates, returns_per_stock = rnorm(200)))
+  p2 <- list(returns_data = data.frame(date = dates, returns_per_stock = rnorm(200)))
   portfolio <- list(p1, p2)
   corr <- correlation_matrix_of_stock_portfolio(portfolio)
   expect_equal(corr, t(corr), tolerance = 1e-12)
@@ -381,8 +381,8 @@ test_that("correlation_matrix_of_stock_portfolio is symmetric", {
 test_that("correlation_matrix_of_stock_portfolio of identical series returns all ones", {
   dates <- seq(as.Date("2020-01-01"), by = "day", length.out = 50)
   r <- rnorm(50)
-  p1 <- list(returns_data = data.frame(date = dates, return = r))
-  p2 <- list(returns_data = data.frame(date = dates, return = r))
+  p1 <- list(returns_data = data.frame(date = dates, returns_per_stock = r))
+  p2 <- list(returns_data = data.frame(date = dates, returns_per_stock = r))
   portfolio <- list(p1, p2)
   corr <- correlation_matrix_of_stock_portfolio(portfolio)
   expect_equal(unname(corr[1, 2]), 1, tolerance = 1e-12)
@@ -487,7 +487,7 @@ test_that("stock_detection mean is finite", {
   expect_true(is.finite(out$current_mean))
 })
 
-test_that("stock_detection returns_data has date and return columns", {
+test_that("stock_detection returns_data has date and returns_per_stock columns", {
   skip_on_cran()
   skip_if_not_installed("tidyquant")
   skip_if_not_installed("depmixS4")
@@ -496,7 +496,7 @@ test_that("stock_detection returns_data has date and return columns", {
   out <- suppressMessages(suppressWarnings(stock_detection(stock)))
   
   expect_true("date" %in% colnames(out$returns_data))
-  expect_true("return" %in% colnames(out$returns_data))
+  expect_true("returns_per_stock" %in% colnames(out$returns_data))
 })
 
 test_that("stock_detection returns_data has correct row count", {
