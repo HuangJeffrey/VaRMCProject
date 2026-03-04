@@ -29,21 +29,21 @@ library(ggplot2)
 
 We include the all the functions available in our package, and the for each function we briefly explain its purpose and how its incorporated with eachother to eventually obtain the VaR value.
 
--Stock Dedection allows us to grab a specific stock's data off the internet to then calculate its volatility measures under a 3-state HMM, the average of it, and its current returns.
+<!-- -Stock Dedection allows us to grab a specific stock's data off the internet to then calculate its volatility measures under a 3-state HMM, the average of it, and its current returns. -->
 
--The Correlation matrix function allows us to merge the data we have from our given portfolio.
+<!-- -The Correlation matrix function allows us to merge the data we have from our given portfolio. -->
 
--The Covariance Matrix function allows us to turn the portfolio of our chosen stocks into a $n$x$n$ matrix.
+<!-- -The Covariance Matrix function allows us to turn the portfolio of our chosen stocks into a $n$x$n$ matrix. -->
 
--The Cholesky function lets us parse through the $n$x$n$ covariance matrix to end up with a lower-triangle matrix
+<!-- -The Cholesky function lets us parse through the $n$x$n$ covariance matrix to end up with a lower-triangle matrix -->
 
--With the shock function, we use it to generate correlated shocks from the Cholesky factor
+<!-- -With the shock function, we use it to generate correlated shocks from the Cholesky factor -->
 
--We then apply these correlated shocks to the GBM through the simulated GBM function
+<!-- -We then apply these correlated shocks to the GBM through the simulated GBM function -->
 
--Then we finally compute the portfolio P&L from these simulated returns 
+<!-- -Then we finally compute the portfolio P&L from these simulated returns -->
 
--Achieving the VaR value.
+<!-- -Achieving the VaR value. -->
 
 # Collecting stock data
 Through the `stock_detection` function, lets say we want to grab the historical data of Apple,
