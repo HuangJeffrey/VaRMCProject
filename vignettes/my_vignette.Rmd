@@ -1,12 +1,12 @@
 ---
 title: "VarMC Package"
-output: rmarkdown::html_vignette
+output: 
+  html_document:
+    toc: true
+    self_contained: true
+    pandoc_args: ["--citeproc"]
 bibliography: references.bib
-nocite: '@*'
-vignette: >
-  %\VignetteIndexEntry{my_vignette}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+nocite: "@*"
 ---
 
 ```{r, include = FALSE}
@@ -60,17 +60,22 @@ ggplot(apple, aes(x = date, y = adjusted)) +
 from here on, as we can see this is the stock info of Apple during 2011 to 2026.
 
 We can also view Apple's current volatility and also current averages of its volatilty
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
-out <- suppressMessages(
-  suppressWarnings(
-    stock_detection(apple)
-  )
-)
+# ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# out <- suppressMessages(
+#   suppressWarnings(
+#     stock_detection(apple)
+#   )
+# )
+# 
+# cat(out$current_volatility)
+# cat(out$current_mean)
+# ```
+```{r, eval = FALSE}
+stock_detection(apple)
 
 cat(out$current_volatility)
 cat(out$current_mean)
 ```
-
 # Correlation Matrix and Covariance matrix 
 
 Let's say our portfolio consists of Apple, Nvidia, Tesla, and Visa.
@@ -89,8 +94,8 @@ portfolio <- list(
 
 regime_vols <- sapply(portfolio, function(x) x$current_volatility)
 regime_means <- sapply(portfolio, function(x) x$current_mean)
-corr_mat <- correlation_matrix(portfolio)
-cov_mat <- covariance_matrix(regime_vols, corr_mat)
+corr_mat <- correlation_matrix_of_stock_portfolio(portfolio)
+cov_mat <- covariance_matrix_of_stock_portfolio(regime_vols, corr_mat)
 
 corr_mat
 cov_mat

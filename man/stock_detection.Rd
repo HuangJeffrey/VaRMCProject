@@ -23,13 +23,10 @@ A list with:
 Fits a 3-state Hidden Markov Model (HMM) to daily log returns of a single stock.
 }
 \examples{
-\dontrun{
 library(tidyquant)
 AAPL <- tq_get("AAPL", from = "2020-01-01", to = "2024-01-01")
 out <- stock_detection(AAPL)
 out$current_volatility
 out$current_mean
 head(out$returns_data)
-}
-
 }

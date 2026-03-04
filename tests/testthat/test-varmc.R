@@ -1,43 +1,43 @@
 # ============================================================
-# Tests for: covariance_matrix()
+# Tests for :covariance_matrix_of_stock_portfolio
 # ============================================================
 
-test_that("covariance_matrix returns correct dimensions", {
+test_that("covariance_matrix_of_stock_portfolio returns correct dimensions", {
   vol <- c(0.02, 0.015, 0.03)
   corr <- diag(3)
-  cov_mat <- covariance_matrix(vol, corr)
+  cov_mat <- covariance_matrix_of_stock_portfolio(vol, corr)
   expect_equal(nrow(cov_mat), 3)
   expect_equal(ncol(cov_mat), 3)
 })
 
-test_that("covariance_matrix diagonal equals sigma^2 when correlation is identity", {
+test_that("covariance_matrix_of_stock_portfolio diagonal equals sigma^2 when correlation is identity", {
   vol <- c(0.02, 0.015, 0.03)
   corr <- diag(3)
-  cov_mat <- covariance_matrix(vol, corr)
+  cov_mat <- covariance_matrix_of_stock_portfolio(vol, corr)
   expect_equal(diag(cov_mat), vol^2, tolerance = 1e-12)
 })
 
-test_that("covariance_matrix off-diagonals equal rho * sigma_i * sigma_j", {
+test_that("covariance_matrix_of_stock_portfolio off-diagonals equal rho * sigma_i * sigma_j", {
   vol <- c(0.02, 0.015)
   corr <- matrix(c(1, 0.4, 0.4, 1), nrow = 2)
-  cov_mat <- covariance_matrix(vol, corr)
+  cov_mat <- covariance_matrix_of_stock_portfolio(vol, corr)
   expect_equal(cov_mat[1, 2], 0.4 * 0.02 * 0.015, tolerance = 1e-12)
   expect_equal(cov_mat[2, 1], 0.4 * 0.02 * 0.015, tolerance = 1e-12)
 })
 
-test_that("covariance_matrix is symmetric", {
+test_that("covariance_matrix_of_stock_portfolio is symmetric", {
   vol <- c(0.05, 0.03, 0.04)
   corr <- matrix(c(1, 0.3, 0.5,
                    0.3, 1, 0.2,
                    0.5, 0.2, 1), nrow = 3)
-  cov_mat <- covariance_matrix(vol, corr)
+  cov_mat <- covariance_matrix_of_stock_portfolio(vol, corr)
   expect_equal(cov_mat, t(cov_mat), tolerance = 1e-12)
 })
 
-test_that("covariance_matrix with perfect correlation gives outer product", {
+test_that("covariance_matrix_of_stock_portfolio with perfect correlation gives outer product", {
   vol <- c(0.02, 0.03)
   corr <- matrix(1, nrow = 2, ncol = 2)
-  cov_mat <- covariance_matrix(vol, corr)
+  cov_mat <- covariance_matrix_of_stock_portfolio(vol, corr)
   expected <- vol %o% vol
   expect_equal(cov_mat, expected, tolerance = 1e-12)
 })
@@ -45,7 +45,7 @@ test_that("covariance_matrix with perfect correlation gives outer product", {
 test_that("covariance_matrix works for single asset", {
   vol <- 0.05
   corr <- matrix(1, nrow = 1, ncol = 1)
-  cov_mat <- covariance_matrix(vol, corr)
+  cov_mat <- covariance_matrix_of_stock_portfolio(vol, corr)
   expect_equal(cov_mat[1, 1], 0.05^2, tolerance = 1e-12)
 })
 
@@ -92,12 +92,12 @@ test_that("cholesky diagonal elements are positive", {
   expect_true(all(diag(L) > 0))
 })
 
-test_that("cholesky works end-to-end with covariance_matrix", {
+test_that("cholesky works end-to-end with covariance_matrix_of_stock_portfolio", {
   vol <- c(0.02, 0.015, 0.03)
   corr <- matrix(c(1, 0.3, 0.5,
                    0.3, 1, 0.2,
                    0.5, 0.2, 1), nrow = 3)
-  cov_mat <- covariance_matrix(vol, corr)
+  cov_mat <- covariance_matrix_of_stock_portfolio(vol, corr)
   L <- cholesky(cov_mat)
   expect_equal(L %*% t(L), cov_mat, tolerance = 1e-10)
 })
@@ -127,7 +127,7 @@ test_that("shock_gen produces correlated shocks matching target correlation", {
   set.seed(42)
   vol <- c(0.02, 0.03)
   corr <- matrix(c(1, 0.8, 0.8, 1), nrow = 2)
-  cov_mat <- covariance_matrix(vol, corr)
+  cov_mat <- covariance_matrix_of_stock_portfolio(vol, corr)
   L <- cholesky(cov_mat)
   shocks <- shock_gen(L, 100000)
   observed_corr <- cor(t(shocks))
@@ -346,45 +346,45 @@ test_that("var_bootstrap_ci VaR point estimate falls within CI", {
 })
 
 # ============================================================
-# Tests for: correlation_matrix()
+# Tests for: correlation_matrix_of_stock_portfolio()
 # ============================================================
 
-test_that("correlation_matrix returns correct dimensions", {
+test_that("correlation_matrix_of_stock_portfolio returns correct dimensions", {
   dates <- seq(as.Date("2020-01-01"), by = "day", length.out = 100)
   p1 <- list(returns_data = data.frame(date = dates, return = rnorm(100, 0, 0.01)))
   p2 <- list(returns_data = data.frame(date = dates, return = rnorm(100, 0, 0.02)))
   p3 <- list(returns_data = data.frame(date = dates, return = rnorm(100, 0, 0.015)))
   portfolio <- list(p1, p2, p3)
-  corr <- correlation_matrix(portfolio)
+  corr <- correlation_matrix_of_stock_portfolio(portfolio)
   expect_equal(nrow(corr), 3)
   expect_equal(ncol(corr), 3)
 })
 
-test_that("correlation_matrix diagonal is all ones", {
+test_that("correlation_matrix_of_stock_portfolio diagonal is all ones", {
   dates <- seq(as.Date("2020-01-01"), by = "day", length.out = 100)
   p1 <- list(returns_data = data.frame(date = dates, return = rnorm(100)))
   p2 <- list(returns_data = data.frame(date = dates, return = rnorm(100)))
   portfolio <- list(p1, p2)
-  corr <- correlation_matrix(portfolio)
+  corr <- correlation_matrix_of_stock_portfolio(portfolio)
   expect_equal(unname(diag(corr)), c(1, 1), tolerance = 1e-12)
 })
 
-test_that("correlation_matrix is symmetric", {
+test_that("correlation_matrix_of_stock_portfolio is symmetric", {
   dates <- seq(as.Date("2020-01-01"), by = "day", length.out = 200)
   p1 <- list(returns_data = data.frame(date = dates, return = rnorm(200)))
   p2 <- list(returns_data = data.frame(date = dates, return = rnorm(200)))
   portfolio <- list(p1, p2)
-  corr <- correlation_matrix(portfolio)
+  corr <- correlation_matrix_of_stock_portfolio(portfolio)
   expect_equal(corr, t(corr), tolerance = 1e-12)
 })
 
-test_that("correlation_matrix of identical series returns all ones", {
+test_that("correlation_matrix_of_stock_portfolio of identical series returns all ones", {
   dates <- seq(as.Date("2020-01-01"), by = "day", length.out = 50)
   r <- rnorm(50)
   p1 <- list(returns_data = data.frame(date = dates, return = r))
   p2 <- list(returns_data = data.frame(date = dates, return = r))
   portfolio <- list(p1, p2)
-  corr <- correlation_matrix(portfolio)
+  corr <- correlation_matrix_of_stock_portfolio(portfolio)
   expect_equal(unname(corr[1, 2]), 1, tolerance = 1e-12)
 })
 
@@ -547,7 +547,7 @@ test_that("full pipeline from covariance to VaR runs without error", {
                    0.3, 1,   0.2,
                    0.5, 0.2, 1), nrow = 3)
   
-  cov_mat <- covariance_matrix(vol, corr)
+  cov_mat <- covariance_matrix_of_stock_portfolio(vol, corr)
   L <- cholesky(cov_mat)
   shocks <- shock_gen(L, 10000)
   sim_ret <- sim_gbm(mu, vol, 10, shocks)
@@ -566,7 +566,7 @@ test_that("pipeline preserves dimensions throughout", {
   mu <- rep(0.001, n_assets)
   corr <- diag(n_assets)
   
-  cov_mat <- covariance_matrix(vol, corr)
+  cov_mat <- covariance_matrix_of_stock_portfolio(vol, corr)
   expect_equal(dim(cov_mat), c(n_assets, n_assets))
   
   L <- cholesky(cov_mat)

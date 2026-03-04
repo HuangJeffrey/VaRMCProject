@@ -15,15 +15,12 @@
 #' }
 #'
 #' @examples
-#' \dontrun{
 #' library(tidyquant)
 #' AAPL <- tq_get("AAPL", from = "2020-01-01", to = "2024-01-01")
 #' out <- stock_detection(AAPL)
 #' out$current_volatility
 #' out$current_mean
 #' head(out$returns_data)
-#' }
-#'
 #' @importFrom tidyquant tq_transmute periodReturn
 #' @importFrom dplyr mutate group_by summarize arrange row_number
 #' @importFrom depmixS4 depmix fit posterior
@@ -80,17 +77,13 @@ stock_detection <- function(stock){
 #'
 #' @param portfolio A list where each element is the output of \code{regime_detection()}.
 #' @return A correlation matrix of returns (one column per asset).
-#'
 #' @examples
-#' \dontrun{
 #' out1 <- regime_detection(tq_get("AAPL"))
 #' out2 <- regime_detection(tq_get("MSFT"))
 #' corr <- correlation_matrix(list(out1, out2))
 #' corr
-#' }
-#'
 #' @export
-correlation_matrix <- function(portfolio){
+correlation_matrix_of_stock_portfolio <- function(portfolio){
   total_returns <- portfolio[[1]]$returns_data[, c("date", "return")]
   
   for (i in 2:length(portfolio)) {
@@ -117,10 +110,10 @@ correlation_matrix <- function(portfolio){
 #' @examples
 #' vol <- c(0.02, 0.015)
 #' corr <- matrix(c(1, 0.4, 0.4, 1), nrow = 2)
-#' covariance_matrix(vol, corr)
+#' covariance_matrix_of_stock_portfolio(vol, corr)
 #'
 #' @export
-covariance_matrix <- function(regime_volatilities, corr_mat) {
+covariance_matrix_of_stock_portfolio <- function(regime_volatilities, corr_mat) {
   n <- length(regime_volatilities)
   cov_mat <- matrix(0, nrow = n, ncol = n)
   
@@ -277,7 +270,7 @@ portfolio_pnl_from_returns <- function(sim_simple_returns, weights, capital = 1e
 compute_var <- function(pnl, conf) {
   loss <- -pnl
   VaR <- as.numeric(
-    stats::quantile(loss, probs = conf, type = 7, na.rm = TRUE)
+    quantile(loss, probs = conf, type = 7, na.rm = TRUE)
   )
   return(VaR)
 }
@@ -312,13 +305,13 @@ var_bootstrap_ci <- function(pnl, conf, B, ci, seed = NULL) {
   var_star <- numeric(B)
   for (b in seq_len(B)) {
     idx <- sample.int(n, size = n, replace = TRUE)
-    var_star[b] <- as.numeric(stats::quantile(loss[idx], probs = conf, type = 7))
+    var_star[b] <- as.numeric(quantile(loss[idx], probs = conf, type = 7))
   }
   
   alpha <- (1 - ci) / 2
   c(
-    lower = as.numeric(stats::quantile(var_star, probs = alpha)),
-    upper = as.numeric(stats::quantile(var_star, probs = 1 - alpha))
+    lower = as.numeric(quantile(var_star, probs = alpha)),
+    upper = as.numeric(quantile(var_star, probs = 1 - alpha))
   )
 }
 
@@ -369,7 +362,7 @@ backtesting <- function(returns_matrix, weights, conf, window,
     regime_vols <- apply(train, 2, sd)
     corr_mat <- cor(train)
 
-    cov_mat <- covariance_matrix(regime_vols, corr_mat)
+    cov_mat <- covariance_matrix_of_stock_portfolio(regime_vols, corr_mat)
     L <- cholesky(cov_mat)
     shocks <- shock_gen(L, num_sims)
     sim_return <- sim_gbm(regime_means, regime_vols, time_horizon, shocks)
