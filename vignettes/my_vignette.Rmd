@@ -27,34 +27,35 @@ library(dplyr)
 library(ggplot2)
 ```
 
-We include the all the functions available in our package, and the for each function we briefly explain its purpose and how its incorporated with eachother to eventually obtain the VaR value.
+# Goal of the Package
+The goal of **VaRMC** is to estimate the Value-at-Risk (VaR) of a portfolio using Monte Carlo simulation combined with regime-switching volatility estimated from Hidden Markov Models (HMMs).
+This approach allows the model to capture changes in market volatility regimes when simulating asset returns. By incorporating regime-dependent volatility into the Monte Carlo framework, the package provides a flexible tool for estimating potential portfolio losses over a specified time horizon.
+Such methods are commonly used in risk management to evaluate the distribution of future portfolio returns and quantify downside risk.
 
-<!-- -Stock Dedection allows us to grab a specific stock's data off the internet to then calculate its volatility measures under a 3-state HMM, the average of it, and its current returns. -->
+We include the all the functions available in our package, and then for each function we briefly explain its purpose and how its incorporated with each other to eventually obtain the VaR value.
 
-<!-- -The Correlation matrix function allows us to merge the data we have from our given portfolio. -->
-
-<!-- -The Covariance Matrix function allows us to turn the portfolio of our chosen stocks into a $n$x$n$ matrix. -->
-
-<!-- -The Cholesky function lets us parse through the $n$x$n$ covariance matrix to end up with a lower-triangle matrix -->
-
-<!-- -With the shock function, we use it to generate correlated shocks from the Cholesky factor -->
-
-<!-- -We then apply these correlated shocks to the GBM through the simulated GBM function -->
-
-<!-- -Then we finally compute the portfolio P&L from these simulated returns -->
-
-<!-- -Achieving the VaR value. -->
+- `stock_detection()`: retrieve historical price data for a given stock and computes key statistics required for the simulation (Specifically, it estimates the asset’s volatility using a 3-state Hidden Markov Model (HMM), along with the mean return and the historical return series)
+- `correlation_matrix_of_stock_portfolio()`: construct the correlation matrix for the assets included in the portfolio
+- `covariance_matrix_of_stock_portfolio()`: convert the correlation matrix and the asset volatilities into an $n$x$n$ covariance matrix, where n represents the number of assets in the portfolio
+- `cholesky()`: parse through the $n$x$n$ covariance matrix to end up with a lower-triangle matrix 
+- `shock_gen()`: simulate correlated shocks for Monte Carlo  
+- `sim_gbm()`: GBM-based return simulation  
+- `log_to_simple_returns()`: convert log-returns to simple returns  
+- `portfolio_pnl_from_returns()`: compute portfolio P&L from returns and weights  
+- `compute_var()`: compute VaR at a chosen confidence level  
+- `var_bootstrap_ci()`: bootstrap confidence interval for VaR  
+- `backtesting()`: evaluate the performance of the VaR model using historical data (implement tests such as violation counting or Kupiec-style tests)
 
 # Collecting stock data
 Through the `stock_detection` function, lets say we want to grab the historical data of Apple,
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 symbol <- "AAPL"
 apple <- tidyquant::tq_get(symbol, from = "2011-01-01", to = "2026-01-01")
 dplyr::glimpse(apple)
 ggplot(apple, aes(x = date, y = adjusted)) +
   geom_line() +
   labs(
-    title = paste(symbol, "Adjusted Close"),
+    title = paste(symbol, "Adjusted Closing Price"),
     x = "Date",
     y = "Adjusted Price"
   )
@@ -63,7 +64,7 @@ ggplot(apple, aes(x = date, y = adjusted)) +
 from here on, as we can see this is the stock info of Apple during 2011 to 2026.
 
 We can also view Apple's current volatility and also current averages of its volatilty
-# ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# ```{r, echo=TRUE, message=FALSE, warning=FALSE}
 # out <- suppressMessages(
 #   suppressWarnings(
 #     stock_detection(apple)
@@ -106,13 +107,13 @@ cov_mat
 
 # Geometric Brownian Motion Simulations
 With out covariance matrix we apply Cholesky so that we can acheieve a upper-triangle matrix with respect to our portfolio
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 L <- cholesky(cov_mat)
 
 L
 ```
 And then for the case of 10,000 simulations
-``` {r, echo=FALSE}
+``` {r, echo=TRUE}
 
 num_sims <- 10000
 shocks <- shock_gen(L, num_sims)
@@ -121,7 +122,7 @@ shocks[1:50]
 
 Finally, by applying the correlated shocks into out GBM formula, we get the simulated GBM returns 
 
-```{r, echo=FALSE, fig.width=9, fig.height=7}
+```{r, echo=TRUE, fig.width=9, fig.height=7}
 n_steps <- 10000
 n_plot <- 200
 asset_idx <- 1
@@ -159,10 +160,21 @@ ggplot(df, aes(x = step, y = value, group = sim, color = sim)) +
   theme(legend.position = "none")
 ```
 
+### Interpretation of the GBM Simulation
+
+The simulated cumulative return paths display a wide fan-shaped pattern over time.  
+This behavior reflects the compounding uncertainty inherent in the Geometric Brownian Motion (GBM) model when simulating returns over multiple time steps.
+
+GBM assumes constant drift and volatility, which means it does not capture certain features commonly observed in financial markets, such as mean reversion or regime changes. As a result, the simulated paths gradually diverge as the time horizon increases.
+
+Ideally, a model that captures the true market dynamics more accurately would produce tighter simulation bands. The wide spread observed here highlights the limitations of the GBM model for long-horizon price prediction.
+
+However, GBM-based simulations remain useful for short-horizon risk measurement, such as estimating 1–10 day Value-at-Risk (VaR), which is the primary objective of this package.
+
 # VaR value
 
 Finally we will be able to calculate our Var value by computing the portfolio's simulated P&L
-```{r, echo=FALSE}
+```{r, echo=TRUE}
 time_horizon <- 10
 weights <- rep(1/4, 4)
 conf <- 0.95
@@ -183,7 +195,7 @@ The bootstraps also shows us the C.I. of 95% under 500 boostrapping resamples.
 
 # Backteting
 Here we do our backtesting through Kupiec's test through the same parameters used in previous examples.
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
 total_returns <- portfolio[[1]]$returns_data[, c("date", "returns_per_stock")]
 for (i in 2:length(portfolio)) {
   temp <- portfolio[[i]]$returns_data[, c("date", "returns_per_stock")]
@@ -211,6 +223,6 @@ The backtesting strategy of using Kupiec's test is not as likely as we hoped for
 
 The work was evenly distributed between the two members of the team as Jeffrey focused more on the start of the project(everything before Cholesky) and Faye worked on the end(after GBM). the work in the middle was worked by ex-member Mahan. 
 
-There majority of A.I help was used in testcases, roxygen, Rmd, ggplot, and the Backtesting portion.
+There majority of A.I help was used in testcases, roxygen, Rmd, ggplot, Backtesting portion, and parts of the explanations given during the introduction.
 
 # References
