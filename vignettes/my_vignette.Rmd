@@ -64,16 +64,6 @@ ggplot(apple, aes(x = date, y = adjusted)) +
 from here on, as we can see this is the stock info of Apple during 2011 to 2026.
 
 We can also view Apple's current volatility and also current averages of its volatilty
-# ```{r, echo=TRUE, message=FALSE, warning=FALSE}
-# out <- suppressMessages(
-#   suppressWarnings(
-#     stock_detection(apple)
-#   )
-# )
-# 
-# cat(out$current_volatility)
-# cat(out$current_mean)
-# ```
 ```{r, eval = FALSE}
 stock_detection(apple)
 
@@ -161,15 +151,7 @@ ggplot(df, aes(x = step, y = value, group = sim, color = sim)) +
 ```
 
 ### Interpretation of the GBM Simulation
-
-The simulated cumulative return paths display a wide fan-shaped pattern over time.  
-This behavior reflects the compounding uncertainty inherent in the Geometric Brownian Motion (GBM) model when simulating returns over multiple time steps.
-
-GBM assumes constant drift and volatility, which means it does not capture certain features commonly observed in financial markets, such as mean reversion or regime changes. As a result, the simulated paths gradually diverge as the time horizon increases.
-
-Ideally, a model that captures the true market dynamics more accurately would produce tighter simulation bands. The wide spread observed here highlights the limitations of the GBM model for long-horizon price prediction.
-
-However, GBM-based simulations remain useful for short-horizon risk measurement, such as estimating 1–10 day Value-at-Risk (VaR), which is the primary objective of this package.
+The wide fan of simulated paths from `sim_gbm()` reflects the uncertainty captured by the regime volatility estimated through `stock_detection()`. Because GB compounds shocks over each time step, the spread grows with the horizon. This is expected — the model is better suited for short-horizon VaR estimation (1-10 days) than long-term forecasting. An ideal result would show tighter concentration around the drift if volatility were lower or the horizon shorter.
 
 # VaR value
 
@@ -193,7 +175,7 @@ This is the final value of money that we lose if we were to choose model, under 
 
 The bootstraps also shows us the C.I. of 95% under 500 boostrapping resamples.
 
-# Backteting
+# Backtesting
 Here we do our backtesting through Kupiec's test through the same parameters used in previous examples.
 ```{r, echo=TRUE, message=FALSE, warning=FALSE}
 total_returns <- portfolio[[1]]$returns_data[, c("date", "returns_per_stock")]
