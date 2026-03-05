@@ -1,0 +1,11 @@
+I notice Faye Sun is making commits, but they seem to be committing without their actual account.
+
+Please hook up your commits with an account so it can be tracked properly. This is not just for me; in general, every interview I've had recently has "stalked" my GitHub account profile and has asked me comments about my commit history.
+
+Look into this: https://stackoverflow.com/questions/71714609/commits-are-not-showing-in-the-profile-tried-everything 
+(or use AI, I don't really care. This is mostly for you.)
+
+No noteworthy errors, so 2/2 on the compilation.
+
+Good at fixing my previous comments of the vignette and code!
+
