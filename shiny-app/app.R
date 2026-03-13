@@ -3,9 +3,10 @@ library(tidyquant)
 library(depmixS4)
 library(dplyr)
 library(ggplot2)
+library(shinyjs)
 
 ui <- fluidPage(
-  
+  useShinyjs(),
   titlePanel(
     div(
       h2("VaRMC", style = "margin:0; font-weight:bold;"),
@@ -19,15 +20,12 @@ ui <- fluidPage(
   sidebarLayout(
     
     sidebarPanel(
-      width = 3,
+      width = 2,
       
       h4("Portfolio Setup"),
-      textInput("tickers", "Tickers (comma-separated)",
-                value = "AAPL, NVDA, TSLA, V"),
+      uiOutput("stock_selector"),
       dateRangeInput("dates", "Date Range",
                      start = "2015-01-01", end = Sys.Date()),
-      textInput("weights", "Weights (comma-separated)",
-                value = "0.25, 0.25, 0.25, 0.25"),
       
       hr(),
       h4("VaR Settings"),
@@ -68,11 +66,11 @@ ui <- fluidPage(
         
         tabPanel("Regime Detection",
                  br(),
-                 h4("HMM Regime Parameters (Current State)"),
+                 h4("HMM Regime Parameters"),
                  tableOutput("regime_table"),
                  hr(),
-                 h4("Return Series"),
-                 plotOutput("return_plot", height = "400px")
+                 h4("Individual Stock Charts"),
+                 uiOutput("stock_charts")
         ),
         
         tabPanel("Correlation",

@@ -110,33 +110,163 @@ bt_results <- eventReactive(input$run_bt, {
 # ════════════════════════════════════════════════════════════════════════
 
 # ── Tab 1: Regime Detection ────────────────────────────────────────────
-
-output$regime_table <- renderTable({
-  res <- results()
-  data.frame(
-    Ticker      = res$tickers,
-    Volatility  = round(res$regime_vols, 6),
-    Mean_Return = round(res$regime_means, 6)
+# Build stock rows with toggles and weight inputs
+output$stock_selector <- renderUI({
+  
+  sectors <- list(
+    "Tech"             = c("AAPL", "NVDA", "TSLA"),
+    "Financial"        = c("BRK-B", "V", "JPM"),
+    "Defense"          = c("LMT", "NOC"),
+    "Consumer Staples" = c("WMT", "COST")
   )
-}, digits = 6)
+  
+  tagList(
+    tags$style(HTML("
+      .stock-btn { margin: 3px; padding: 6px 14px; border: 1px solid #ccc;
+                   border-radius: 5px; cursor: pointer; background: #f5f5f5;
+                   font-weight: bold; display: inline-block; }
+      .stock-btn.selected { background: #337ab7; color: white; border-color: #337ab7; }
+      .sector-label { font-size: 13px; color: #888; margin-top: 10px; margin-bottom: 2px; }
+    ")),
+    
+    h5("Select Stocks (click to toggle)"),
+    
+    lapply(names(sectors), function(sec) {
+      tagList(
+        p(sec, class = "sector-label"),
+        div(
+          lapply(sectors[[sec]], function(tk) {
+            actionButton(paste0("btn_", gsub("-", "", tk)), label = tk, class = "stock-btn")
+          })
+        )
+      )
+    }),
+    
+    br(),
+    h5("Weights"),
+    uiOutput("weight_rows")
+  )
+})
 
-output$return_plot <- renderPlot({
+# Track which stocks are selected
+selected_stocks <- reactiveVal(character(0))
+
+observe({
+  stocks <- c("AAPL", "NVDA", "TSLA", "BRK-B", "V", "JPM", "LMT", "NOC", "WMT", "COST")
+  
+  lapply(stocks, function(tk) {
+    btn_id <- paste0("btn_", gsub("-", "", tk))
+    observeEvent(input[[btn_id]], {
+      current <- selected_stocks()
+      if (tk %in% current) {
+        selected_stocks(setdiff(current, tk))
+      } else {
+        selected_stocks(c(current, tk))
+      }
+    }, ignoreInit = TRUE)
+  })
+})
+
+observe({
+  stocks <- c("AAPL", "NVDA", "TSLA", "BRK-B", "V", "JPM", "LMT", "NOC", "WMT", "COST")
+  current <- selected_stocks()
+  
+  lapply(stocks, function(tk) {
+    btn_id <- paste0("btn_", gsub("-", "", tk))
+    if (tk %in% current) {
+      shinyjs::addClass(id = btn_id, class = "selected")
+    } else {
+      shinyjs::removeClass(id = btn_id, class = "selected")
+    }
+  })
+})
+
+# Show weight input only for selected stocks
+output$weight_rows <- renderUI({
+  sel <- selected_stocks()
+  if (length(sel) == 0) return(helpText("No stocks selected."))
+  
+  default_w <- round(1 / length(sel), 2)
+  
+  lapply(sel, function(tk) {
+    fluidRow(
+      column(6, strong(tk, style = "margin-top:8px;")),
+      column(6, numericInput(paste0("w_", tk), label = NULL,
+                             value = default_w, min = 0, max = 1, step = 0.01))
+    )
+  })
+})
+
+# Getters
+get_tickers <- reactive({
+  selected_stocks()
+})
+
+get_weights <- reactive({
+  tickers <- get_tickers()
+  req(length(tickers) >= 2)
+  w <- sapply(tickers, function(tk) {
+    val <- input[[paste0("w_", tk)]]
+    if (is.null(val) || val == 0) 0.01 else val
+  })
+  w / sum(w)
+})
+
+# Dynamically create one chart per stock
+output$stock_charts <- renderUI({
+  res <- results()
+  n <- length(res$tickers)
+  
+  plot_list <- lapply(1:n, function(i) {
+    tk <- res$tickers[i]
+    plot_id <- paste0("stock_plot_", i)
+    info_id <- paste0("stock_info_", i)
+    
+    tagList(
+      h4(tk),
+      verbatimTextOutput(info_id),
+      plotOutput(plot_id, height = "200px"),
+      hr()
+    )
+  })
+  
+  do.call(tagList, plot_list)
+})
+
+# Render each chart and info box
+observe({
   res <- results()
   
-  all_prices <- do.call(rbind, lapply(res$tickers, function(tk) {
-    rd <- res$portfolio[[tk]]$returns_data
-    rd$price <- cumprod(1 + (exp(rd$returns_per_stock) - 1)) * 100
-    rd$ticker <- tk
-    rd
-  }))
-  
-  ggplot(all_prices, aes(x = date, y = price, colour = ticker)) +
-    geom_line(linewidth = 0.5) +
-    labs(title = "Cumulative Stock Performance (Base = $100)",
-         x = "", y = "Price ($)") +
-    theme_minimal(base_size = 14)
+  lapply(1:length(res$tickers), function(i) {
+    tk <- res$tickers[i]
+    plot_id <- paste0("stock_plot_", i)
+    info_id <- paste0("stock_info_", i)
+    
+    output[[plot_id]] <- renderPlot({
+      rd <- res$portfolio[[tk]]$returns_data
+      rd$price <- cumprod(1 + (exp(rd$returns_per_stock) - 1)) * 100
+      
+      ggplot(rd, aes(x = date, y = price)) +
+        geom_line(colour = "steelblue", linewidth = 0.5) +
+        labs(title = paste(tk),
+             x = "Date", y = "Price ($)") +
+        theme_minimal(base_size = 13)
+    })
+    
+    output[[info_id]] <- renderPrint({
+      vol <- res$regime_vols[tk]
+      
+      # Determine regime label based on volatility ranking
+      all_vols <- sort(res$regime_vols)
+      regime_rank <- which(names(all_vols) == tk)
+      regime_label <- c("Low", "Medium", "High")[min(regime_rank, 3)]
+      
+      cat(tk, "\n")
+      cat("  Current Regime:  ", regime_label, "volatility\n")
+      cat("  Volatility:      ", round(vol, 6), "\n")
+    })
+  })
 })
-plotOutput("return_plot", height = "700px")
 
 # ── Tab 2: Correlation ─────────────────────────────────────────────────
 
