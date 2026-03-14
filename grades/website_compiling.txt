@@ -1,0 +1,32 @@
+Good!
+
+I think you are likely aware of some issues, i.e., features like "Simulation" appear to have this warning:
+
+Error: [object Object]
+
+And for some of the results, I see:
+
+========================================
+     Kupiec POF Backtest Results
+========================================
+
+Total Observations:     2306 
+Expected Violations:    115.3 
+Observed Violations:    943 
+Expected Rate:          0.05 
+Observed Rate:          0.4089 
+----------------------------------------
+LR Statistic:           NaN 
+Critical Value (95%):   3.8415 
+P-Value:                NaN 
+----------------------------------------
+Reject Model?           NA 
+========================================
+
+One other thing I would probably add is to make it more clear to the user what to expect or what they will get out of this website. For example, briefly explain what this calculator is for, what it means to have a "high volatility", how to interpret the numbers for the "Kupiec POF Backtest Results", etc. This is so there is less confusion if you were to showcase this website to anyone else.
+
+Hope to see proper changes in the newest version!
+
+Also, Faye Sun seems to have connected to their GitHub account; hope they can make more changes because the commits that were done seemed limited... (Unless you want to vouch for him Jeffrey... I just think it's important if both people are committing on their own computer.)
+
+1/1
