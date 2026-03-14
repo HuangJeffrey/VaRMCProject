@@ -30,19 +30,24 @@ ui <- fluidPage(
       hr(),
       h4("VaR Settings"),
       sliderInput("conf", "Confidence Level",
-                  min = 0.90, max = 0.99, value = 0.95, step = 0.01),
+                  min = 0.95, max = 0.99, value = 0.95, step = 0.01),
       numericInput("horizon", "Time Horizon (days)",
                    value = 10, min = 1, max = 200),
       numericInput("num_sims", "Monte Carlo Simulations",
                    value = 10000, min = 1000, max = 50000, step = 1000),
-      numericInput("capital", "Capital ($)",
-                   value = 1000000, min = 1000),
+      
+      hidden(
+        div(
+          numericInput("capital", "Capital ($)",
+                       value = 1000000, min = 1000000, max = 1000000, step = 0)
+        )
+      ),
       
       hr(),
       h4("Bootstrap CI"),
       numericInput("B", "Resamples", value = 500, min = 100, max = 5000),
       sliderInput("ci_level", "CI Level",
-                  min = 0.90, max = 0.99, value = 0.95, step = 0.01),
+                  min = 0.95, max = 0.99, value = 0.95, step = 0.01),
       
       hr(),
       h4("Backtesting"),
