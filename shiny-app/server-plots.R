@@ -97,7 +97,7 @@ bt_results <- eventReactive(input$run_bt, {
       window         = input$bt_window,
       time_horizon   = input$horizon,
       num_sims       = input$num_sims,
-      capital        = input$capital
+      capital        = 1000000
     )
     
     incProgress(0.6, detail = "Done!")
@@ -306,11 +306,16 @@ output$fan_chart <- renderPlot({
     value = as.vector(paths)
   )
   
-  ggplot(df, aes(x = step, y = value, group = path)) +
-    geom_line(alpha = 0.25, linewidth = 0.3, colour = "steelblue") +
+  ggplot(df, aes(x = step, y = value, group = path, colour = path)) +
+    geom_line(alpha = 0.55, linewidth = 0.45) +
+    scale_colour_manual(values = grDevices::hcl.colors(n_paths, "Spectral"), guide = "none") +
     labs(title = "Monte Carlo Fan Chart — Cumulative Log Returns",
          x = "Time Step", y = "Cumulative Log Return") +
-    theme_minimal(base_size = 14)
+    theme_minimal(base_size = 14) +
+    theme(
+      plot.title = element_text(face = "bold"),
+      panel.grid.minor = element_blank()
+    )
 })
 
 output$pnl_hist <- renderPlot({
