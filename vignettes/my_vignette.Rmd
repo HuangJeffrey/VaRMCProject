@@ -205,6 +205,6 @@ The backtesting strategy of using Kupiec's test is not as likely as we hoped for
 
 The work was evenly distributed between the two members of the team as Jeffrey focused more on the start of the project(everything before Cholesky) and Faye worked on the end(after GBM). the work in the middle was worked by ex-member Mahan. 
 
-There majority of A.I help was used in testcases, roxygen, Rmd, ggplot, Backtesting portion, and parts of the explanations given during the introduction.
+There majority of A.I help was used in testcases, roxygen, Rmd, ggplot, Backtesting portion, parts of the explanations given during the introduction, most recent usage of A.I was used for creating the template of the rshiny template, and then used to help with deploying.
 
 # References
