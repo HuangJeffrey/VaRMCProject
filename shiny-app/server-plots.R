@@ -97,13 +97,31 @@ bt_results <- eventReactive(input$run_bt, {
       window         = input$bt_window,
       time_horizon   = input$horizon,
       num_sims       = input$num_sims,
-      capital        = 1000000
+      capital        = input$capital
     )
     
     incProgress(0.6, detail = "Done!")
     result
   })
 })
+
+# Dark mode theme for ggplot2
+theme_dark_varmc <- function() {
+  theme_minimal(base_size = 14) +
+    theme(
+      plot.background = element_rect(fill = "#000000", color = NA),
+      panel.background = element_rect(fill = "#0f0f0f", color = NA),
+      panel.grid.major = element_line(color = "#1a1a1a", size = 0.2),
+      panel.grid.minor = element_line(color = "#151515", size = 0.1),
+      plot.title = element_text(color = "#ffffff", face = "bold", size = 16),
+      plot.subtitle = element_text(color = "#808080", size = 13),
+      axis.title = element_text(color = "#c0c0c0", size = 12),
+      axis.text = element_text(color = "#808080", size = 11),
+      legend.background = element_rect(fill = "#0f0f0f", color = NA),
+      legend.text = element_text(color = "#c0c0c0"),
+      legend.title = element_text(color = "#c0c0c0")
+    )
+}
 
 # ════════════════════════════════════════════════════════════════════════
 # OUTPUTS
@@ -121,15 +139,7 @@ output$stock_selector <- renderUI({
   )
   
   tagList(
-    tags$style(HTML("
-      .stock-btn { margin: 3px; padding: 6px 14px; border: 1px solid #ccc;
-                   border-radius: 5px; cursor: pointer; background: #f5f5f5;
-                   font-weight: bold; display: inline-block; }
-      .stock-btn.selected { background: #337ab7; color: white; border-color: #337ab7; }
-      .sector-label { font-size: 13px; color: #888; margin-top: 10px; margin-bottom: 2px; }
-    ")),
-    
-    h5("Select Stocks (click to toggle)"),
+    h5("Select Stocks"),
     
     lapply(names(sectors), function(sec) {
       tagList(
@@ -212,29 +222,132 @@ get_weights <- reactive({
   w / sum(w)
 })
 
-# Dynamically create one chart per stock
+# Track which stock is expanded
+expanded_stock <- reactiveVal(NULL)
+
+# Dynamically create stock row buttons
 output$stock_charts <- renderUI({
+  # Only render when Regime Detection tab is active
+  req(input$tabs == "Regime Detection")
   res <- results()
   n <- length(res$tickers)
   
-  plot_list <- lapply(1:n, function(i) {
-    tk <- res$tickers[i]
-    plot_id <- paste0("stock_plot_", i)
-    info_id <- paste0("stock_info_", i)
+  # Add CSS for accordion styling
+  accordion_css <- "
+    .stock-row {
+      background: #0f0f0f;
+      border: 2px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 10px 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
     
-    tagList(
-      h4(tk),
-      verbatimTextOutput(info_id),
-      plotOutput(plot_id, height = "200px"),
-      hr()
-    )
-  })
+    .stock-row:hover {
+      background: #1a1a1a;
+      border-color: #4a9eff;
+    }
+    
+    .stock-row.active {
+      background: #1a1a1a;
+      border-color: #4a9eff;
+    }
+    
+    .stock-row-ticker {
+      font-size: 18px;
+      font-weight: bold;
+      color: #4a9eff;
+    }
+    
+    .stock-row-volatility {
+      font-size: 14px;
+      color: #808080;
+    }
+    
+    .stock-row-arrow {
+      font-size: 20px;
+      color: #4a9eff;
+      transition: transform 0.3s ease;
+    }
+    
+    .stock-row.active .stock-row-arrow {
+      transform: rotate(180deg);
+    }
+    
+    .stock-details {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      visibility: hidden;
+    }
+    
+    .stock-details.expanded {
+      max-height: 600px;
+      opacity: 1;
+      visibility: visible;
+    }
+  "
   
-  do.call(tagList, plot_list)
+  tagList(
+    tags$style(HTML(accordion_css)),
+    
+    # Stock buttons/rows
+    lapply(1:n, function(i) {
+      tk <- res$tickers[i]
+      vol <- res$regime_vols[tk]
+      info_id <- paste0("stock_info_", i)
+      details_id <- paste0("stock_details_", i)
+      plot_id <- paste0("stock_plot_", i)
+      
+      tagList(
+        # Stock row button
+        div(
+          class = "stock-row",
+          id = paste0("stock_row_", i),
+          onclick = sprintf("
+            var row = document.getElementById('stock_row_%d');
+            var details = document.getElementById('stock_details_%d');
+            
+            // Toggle current stock (without closing others)
+            if (row.classList.contains('active')) {
+              row.classList.remove('active');
+              details.classList.remove('expanded');
+            } else {
+              row.classList.add('active');
+              details.classList.add('expanded');
+            }
+          ", i, i),
+          
+          div(
+            div(class = "stock-row-ticker", tk),
+            div(class = "stock-row-volatility", sprintf("Volatility: %.6f", vol))
+          ),
+          div(class = "stock-row-arrow", "▼")
+        ),
+        
+        # Expandable details
+        div(
+          class = "stock-details",
+          id = paste0("stock_details_", i),
+          style = "padding: 20px; background: #2a2a2a; border-radius: 0 0 8px 8px; border-top: 2px solid #404040; margin-bottom: 10px;",
+          
+          verbatimTextOutput(info_id),
+          plotOutput(plot_id, height = "250px")
+        )
+      )
+    })
+  )
 })
 
-# Render each chart and info box
+# Render each chart and info box (lazy loaded - only when tab is active)
 observe({
+  # Only render when Regime Detection tab is active
+  req(input$tabs == "Regime Detection")
   res <- results()
   
   lapply(1:length(res$tickers), function(i) {
@@ -247,11 +360,11 @@ observe({
       rd$price <- cumprod(1 + (exp(rd$returns_per_stock) - 1)) * 100
       
       ggplot(rd, aes(x = date, y = price)) +
-        geom_line(colour = "steelblue", linewidth = 0.5) +
+        geom_line(colour = "#4a9eff", linewidth = 0.6) +
         labs(title = paste(tk),
              x = "Date", y = "Price ($)") +
-        theme_minimal(base_size = 13)
-    })
+        theme_dark_varmc()
+    }, bg = "#000000")
     
     output[[info_id]] <- renderPrint({
       vol <- res$regime_vols[tk]
@@ -270,34 +383,141 @@ observe({
 
 # ── Tab 2: Correlation ─────────────────────────────────────────────────
 
-output$corr_table <- renderTable({
+output$corr_table <- renderUI({
+  req(input$tabs == "Correlation")
   res <- results()
   cm <- round(res$corr_mat, 4)
-  colnames(cm) <- res$tickers
-  data.frame(Ticker = res$tickers, cm, check.names = FALSE)
+  
+  # Create styled HTML table
+  table_html <- "
+    <div style='overflow-x: auto;'>
+      <table style='
+        width: 100%;
+        border-collapse: collapse;
+        font-family: monospace;
+        font-size: 16px;
+        background: #0f0f0f;
+      '>
+        <thead>
+          <tr style='background: #1a1a1a; border-bottom: 3px solid #4a9eff;'>
+            <th style='padding: 16px; text-align: left; color: #ffffff; font-weight: bold; border-right: 2px solid #2a2a2a;'>Ticker</th>
+  "
+  
+  # Add ticker headers
+  for (i in 1:ncol(cm)) {
+    table_html <- paste0(table_html, 
+                         "<th style='padding: 16px; text-align: center; color: #ffffff; font-weight: bold; border-right: 2px solid #2a2a2a;'>",
+                         res$tickers[i],
+                         "</th>"
+    )
+  }
+  
+  table_html <- paste0(table_html, "</tr></thead><tbody>")
+  
+  # Add rows
+  for (i in 1:nrow(cm)) {
+    table_html <- paste0(table_html, 
+                         "<tr style='border-bottom: 1px solid #2a2a2a;'>
+        <td style='padding: 16px; color: #4a9eff; font-weight: bold; background: #1a1a1a; border-right: 2px solid #2a2a2a;'>",
+                         res$tickers[i],
+                         "</td>"
+    )
+    
+    for (j in 1:ncol(cm)) {
+      val <- cm[i, j]
+      # Color gradient: closer to 1 = more blue, closer to 0 = more gray
+      intensity <- val
+      bg_color <- sprintf("rgba(74, 158, 255, %.1f)", intensity * 0.3)
+      
+      table_html <- paste0(table_html,
+                           "<td style='padding: 16px; text-align: center; color: #e0e0e0; background: ",
+                           bg_color,
+                           "; border-right: 1px solid #2a2a2a;'>",
+                           val,
+                           "</td>"
+      )
+    }
+    
+    table_html <- paste0(table_html, "</tr>")
+  }
+  
+  table_html <- paste0(table_html, "</tbody></table></div>")
+  
+  HTML(table_html)
 })
 
-output$cov_table <- renderTable({
+output$cov_table <- renderUI({
+  req(input$tabs == "Correlation")
   res <- results()
   cv <- signif(res$cov_mat, 4)
-  colnames(cv) <- res$tickers
-  data.frame(Ticker = res$tickers, cv, check.names = FALSE)
-}, digits = 8)
+  
+  # Create styled HTML table
+  table_html <- "
+    <div style='overflow-x: auto; margin-top: 40px;'>
+      <table style='
+        width: 100%;
+        border-collapse: collapse;
+        font-family: monospace;
+        font-size: 16px;
+        background: #0f0f0f;
+      '>
+        <thead>
+          <tr style='background: #1a1a1a; border-bottom: 3px solid #4a9eff;'>
+            <th style='padding: 16px; text-align: left; color: #ffffff; font-weight: bold; border-right: 2px solid #2a2a2a;'>Ticker</th>
+  "
+  
+  # Add ticker headers
+  for (i in 1:ncol(cv)) {
+    table_html <- paste0(table_html, 
+                         "<th style='padding: 16px; text-align: center; color: #ffffff; font-weight: bold; border-right: 2px solid #2a2a2a;'>",
+                         res$tickers[i],
+                         "</th>"
+    )
+  }
+  
+  table_html <- paste0(table_html, "</tr></thead><tbody>")
+  
+  # Add rows
+  for (i in 1:nrow(cv)) {
+    table_html <- paste0(table_html, 
+                         "<tr style='border-bottom: 1px solid #2a2a2a;'>
+        <td style='padding: 16px; color: #4a9eff; font-weight: bold; background: #1a1a1a; border-right: 2px solid #2a2a2a;'>",
+                         res$tickers[i],
+                         "</td>"
+    )
+    
+    for (j in 1:ncol(cv)) {
+      val <- cv[i, j]
+      
+      table_html <- paste0(table_html,
+                           "<td style='padding: 16px; text-align: center; color: #e0e0e0; background: rgba(74, 158, 255, 0.1); border-right: 1px solid #2a2a2a;'>",
+                           format(val, scientific = TRUE, digits = 3),
+                           "</td>"
+      )
+    }
+    
+    table_html <- paste0(table_html, "</tr>")
+  }
+  
+  table_html <- paste0(table_html, "</tbody></table></div>")
+  
+  HTML(table_html)
+})
 
 # ── Tab 3: Simulation ──────────────────────────────────────────────────
 
 output$fan_chart <- renderPlot({
+  req(input$tabs == "Simulation")
   res <- results()
-  n_paths <- 200
-  n_steps <- 5000
-  dt <- 1 / 252
+  n_paths <- 100
+  n_steps <- min(input$horizon, 20)
   
   port_vol <- sum(res$weights * res$regime_vols)
   
   set.seed(42)
   Z <- matrix(rnorm(n_steps * n_paths), nrow = n_steps, ncol = n_paths)
   paths <- apply(Z, 2, function(z) {
-    cumsum(-0.5 * port_vol^2 * dt + port_vol * sqrt(dt) * z)
+    cumsum(-0.5 * port_vol^2 * (1/252) + port_vol * sqrt(1/252) * z)
   })
   
   df <- data.frame(
@@ -306,83 +526,143 @@ output$fan_chart <- renderPlot({
     value = as.vector(paths)
   )
   
-  ggplot(df, aes(x = step, y = value, group = path, colour = path)) +
-    geom_line(alpha = 0.55, linewidth = 0.45) +
-    scale_colour_manual(values = grDevices::hcl.colors(n_paths, "Spectral"), guide = "none") +
+  # Generate random colors for each path
+  set.seed(123)
+  colors <- rgb(
+    runif(n_paths, 0.2, 1),    # R: 0.2 to 1 (avoid too dark)
+    runif(n_paths, 0.2, 1),    # G: 0.2 to 1
+    runif(n_paths, 0.4, 1),    # B: 0.4 to 1 (bias toward blue tones)
+    alpha = 0.6
+  )
+  
+  ggplot(df, aes(x = step, y = value, group = path, color = factor(path))) +
+    geom_line(linewidth = 0.5, show.legend = FALSE) +
+    scale_color_manual(values = colors) +
     labs(title = "Monte Carlo Fan Chart — Cumulative Log Returns",
          x = "Time Step", y = "Cumulative Log Return") +
-    theme_minimal(base_size = 14) +
-    theme(
-      plot.title = element_text(face = "bold"),
-      panel.grid.minor = element_blank()
-    )
-})
+    theme_dark_varmc()
+}, bg = "#000000")
 
 output$pnl_hist <- renderPlot({
+  req(input$tabs == "Simulation")
   res <- results()
   df <- data.frame(pnl = res$pnl)
   
   ggplot(df, aes(x = pnl)) +
-    geom_histogram(bins = 80, fill = "steelblue", colour = "white", alpha = 0.8) +
+    geom_histogram(bins = 80, fill = "#4a9eff", colour = "#2a2a2a", alpha = 0.8) +
     labs(title = "Simulated Portfolio P&L Distribution",
          x = "P&L ($)", y = "Count") +
-    theme_minimal(base_size = 14)
-})
+    theme_dark_varmc()
+}, bg = "#000000")
 
 # ── Tab 4: VaR Results ─────────────────────────────────────────────────
 
-output$var_text <- renderPrint({
+output$var_text <- renderUI({
+  req(input$tabs == "VaR Results")
   res <- results()
-  cat("========================================\n")
-  cat("         VaR Results Summary\n")
-  cat("========================================\n\n")
-  cat("Portfolio:      ", paste(res$tickers, collapse = ", "), "\n")
-  cat("Weights:        ", paste(round(res$weights, 2), collapse = ", "), "\n")
-  cat("Confidence:     ", input$conf, "\n")
-  cat("Time Horizon:   ", input$horizon, "days\n")
-  cat("Simulations:    ", input$num_sims, "\n")
-  cat("Capital:         $", format(input$capital, big.mark = ","), "\n")
-  cat("----------------------------------------\n")
-  cat("VaR Estimate:    $", format(round(res$var_est, 2), big.mark = ","), "\n")
-  cat("Bootstrap CI:    [$",
-      format(round(res$ci["lower"], 2), big.mark = ","), ", $",
-      format(round(res$ci["upper"], 2), big.mark = ","), "]\n")
-  cat("========================================\n")
+  
+  html_content <- paste0("
+    <div style='
+      background: #0f0f0f;
+      border: 2px solid #4a9eff;
+      border-radius: 12px;
+      padding: 40px;
+      font-family: monospace;
+      font-size: 15px;
+      line-height: 2;
+      width: 100%;
+      box-sizing: border-box;
+    '>
+      <div style='
+        color: #ffffff;
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 30px;
+        text-align: center;
+        letter-spacing: 2px;
+      '>VaR RESULTS SUMMARY</div>
+      
+      <div style='border-bottom: 2px solid #4a9eff; padding-bottom: 20px; margin-bottom: 20px;'>
+        <div style='color: #a0a0a0; margin-bottom: 8px;'><span style='color: #ffffff; font-weight: bold; width: 150px; display: inline-block;'>Portfolio:</span> ", paste(res$tickers, collapse = ", "), "</div>
+        <div style='color: #a0a0a0; margin-bottom: 8px;'><span style='color: #ffffff; font-weight: bold; width: 150px; display: inline-block;'>Weights:</span> ", paste(round(res$weights, 2), collapse = ", "), "</div>
+        <div style='color: #a0a0a0; margin-bottom: 8px;'><span style='color: #ffffff; font-weight: bold; width: 150px; display: inline-block;'>Confidence Level:</span> ", input$conf, "</div>
+        <div style='color: #a0a0a0; margin-bottom: 8px;'><span style='color: #ffffff; font-weight: bold; width: 150px; display: inline-block;'>Time Horizon:</span> ", input$horizon, " days</div>
+        <div style='color: #a0a0a0; margin-bottom: 8px;'><span style='color: #ffffff; font-weight: bold; width: 150px; display: inline-block;'>Simulations:</span> ", format(input$num_sims, big.mark = ","), "</div>
+        <div style='color: #a0a0a0;'><span style='color: #ffffff; font-weight: bold; width: 150px; display: inline-block;'>Capital:</span> $", format(input$capital, big.mark = ","), "</div>
+      </div>
+      
+      <div style='background: rgba(74, 158, 255, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid #4a9eff;'>
+        <div style='color: #ff6b6b; font-size: 18px; font-weight: bold; margin-bottom: 12px;'>VaR Estimate (Loss Threshold)</div>
+        <div style='color: #e0e0e0; font-size: 16px; margin-bottom: 16px;'>
+          <span style='color: #ff6b6b; font-weight: bold;'>$", format(round(res$var_est, 2), big.mark = ","), "</span>
+        </div>
+        
+        <div style='color: #a0a0a0; font-size: 13px; margin-top: 16px; margin-bottom: 8px;'>95% Bootstrap Confidence Interval:</div>
+        <div style='color: #4a9eff; font-weight: bold;'>[  $", format(round(res$ci["lower"], 2), big.mark = ","), "  ,  $", format(round(res$ci["upper"], 2), big.mark = ","), "  ]</div>
+      </div>
+    </div>
+  ")
+  
+  HTML(html_content)
 })
 
 output$var_plot <- renderPlot({
+  req(input$tabs == "VaR Results")
   res <- results()
   df <- data.frame(pnl = res$pnl)
   
   ggplot(df, aes(x = pnl)) +
-    geom_histogram(bins = 80, fill = "steelblue", colour = "white", alpha = 0.7) +
-    geom_vline(xintercept = -res$var_est, colour = "red",
+    geom_histogram(bins = 80, fill = "#4a9eff", colour = "#2a2a2a", alpha = 0.7) +
+    geom_vline(xintercept = -res$var_est, colour = "#ff6b6b",
                linewidth = 1.2, linetype = "dashed") +
     annotate("text", x = -res$var_est, y = Inf,
              label = paste0("VaR = $", format(round(res$var_est, 0), big.mark = ",")),
-             vjust = 2, hjust = -0.1, colour = "red", size = 5, fontface = "bold") +
+             vjust = 2, hjust = -0.1, colour = "#ff6b6b", size = 5, fontface = "bold") +
     labs(title = "P&L Distribution with VaR Threshold",
          x = "P&L ($)", y = "Count") +
-    theme_minimal(base_size = 14)
-})
+    theme_dark_varmc()
+}, bg = "#000000")
 
 # ── Tab 5: Backtesting ─────────────────────────────────────────────────
 
-output$bt_text <- renderPrint({
+output$bt_text <- renderUI({
+  req(input$tabs == "Backtesting")
   bt <- bt_results()
-  cat("========================================\n")
-  cat("     Kupiec POF Backtest Results\n")
-  cat("========================================\n\n")
-  cat("Total Observations:    ", bt$total_obs, "\n")
-  cat("Expected Violations:   ", round(bt$expected_violations, 2), "\n")
-  cat("Observed Violations:   ", bt$violations, "\n")
-  cat("Expected Rate:         ", bt$expected_rate, "\n")
-  cat("Observed Rate:         ", round(bt$observed_rate, 4), "\n")
-  cat("----------------------------------------\n")
-  cat("LR Statistic:          ", bt$LR, "\n")
-  cat("Critical Value (95%):  ", bt$critical_value, "\n")
-  cat("P-Value:               ", bt$p_value, "\n")
-  cat("----------------------------------------\n")
-  cat("Reject Model?          ", ifelse(bt$reject, "YES", "NO"), "\n")
-  cat("========================================\n")
+  
+  # Determine pass/fail color
+  result_color <- ifelse(bt$reject, "#ff6b6b", "#51cf66")
+  result_text <- ifelse(bt$reject, "REJECTED", "PASSED")
+  
+  html_content <- paste0("
+    <div style='
+      background: #0f0f0f;
+      border: 2px solid #4a9eff;
+      border-radius: 12px;
+      padding: 40px;
+      font-family: monospace;
+      font-size: 14px;
+      line-height: 2;
+      width: 100%;
+      box-sizing: border-box;
+    '>
+      <div style='
+        color: #ffffff;
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 30px;
+        text-align: center;
+        letter-spacing: 2px;
+      '>KUPIEC POF BACKTEST RESULTS</div>
+      
+      <div style='border-bottom: 2px solid #4a9eff; padding-bottom: 20px; margin-bottom: 20px;'>
+        <div style='color: #a0a0a0; margin-bottom: 8px;'><span style='color: #ffffff; font-weight: bold; width: 180px; display: inline-block;'>Total Observations:</span> ", bt$total_obs, "</div>
+        <div style='color: #a0a0a0; margin-bottom: 8px;'><span style='color: #ffffff; font-weight: bold; width: 180px; display: inline-block;'>Expected Violations:</span> ", round(bt$expected_violations, 2), "</div>
+        <div style='color: #a0a0a0; margin-bottom: 8px;'><span style='color: #ffffff; font-weight: bold; width: 180px; display: inline-block;'>Observed Violations:</span> ", bt$violations, "</div>
+        <div style='color: #a0a0a0; margin-bottom: 8px;'><span style='color: #ffffff; font-weight: bold; width: 180px; display: inline-block;'>Expected Rate:</span> ", round(bt$expected_rate, 4), "</div>
+        <div style='color: #a0a0a0;'><span style='color: #ffffff; font-weight: bold; width: 180px; display: inline-block;'>Observed Rate:</span> ", round(bt$observed_rate, 4), "</div>
+      </div>
+    </div>
+  ")
+  
+  HTML(html_content)
 })
