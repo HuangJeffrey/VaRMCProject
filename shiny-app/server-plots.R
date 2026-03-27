@@ -72,6 +72,11 @@ results <- eventReactive(input$run, {
   })
 })
 
+# Navigate to Regime Detection tab when Compute VaR is clicked
+observeEvent(input$run, {
+  updateTabsetPanel(session, "tabs", selected = "Regime Detection")
+})
+
 # ── Backtesting (separate button) ──────────────────────────────────────
 bt_results <- eventReactive(input$run_bt, {
   
